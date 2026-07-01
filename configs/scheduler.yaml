@@ -1,0 +1,29 @@
+# Scheduler gateway configuration
+scheduler:
+  type: sjf  # fcfs | sjf | oracle_sjf
+  max_workers: 32
+  fallback_to_fcfs: true
+  aging_interval_sec: 0.5
+  request_timeout_sec: 300.0
+  vllm_connect_timeout_sec: 5.0
+  aging:
+    policy: linear  # linear | logarithmic | exponential
+    factor: 0.001
+    max_boost: 500.0
+
+predictor:
+  models_dir: shared/models
+  backend: pytorch  # pytorch | onnx | torchscript
+
+vllm:
+  base_url: http://localhost:8002
+  model: HuggingFaceTB/SmolLM3-3B
+
+gateway:
+  host: 0.0.0.0
+  port: 8080
+  log_level: INFO
+
+monitoring:
+  prometheus_port: 9091
+  enable_tracing: false

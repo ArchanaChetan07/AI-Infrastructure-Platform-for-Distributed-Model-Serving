@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package predictor.v1;
+
+option go_package = "github.com/vllm-intelligent-scheduler/internal/grpc/predictorpb";
+
+service PredictorService {
+  rpc Predict(PredictRequest) returns (PredictResponse);
+  rpc PredictBatch(PredictBatchRequest) returns (PredictBatchResponse);
+}
+
+message PredictRequest {
+  string prompt = 1;
+}
+
+message PredictResponse {
+  double predicted_tokens = 1;
+  double feature_latency_ms = 2;
+  double predict_latency_ms = 3;
+}
+
+message PredictBatchRequest {
+  repeated string prompts = 1;
+}
+
+message PredictBatchResponse {
+  repeated PredictResponse predictions = 1;
+}

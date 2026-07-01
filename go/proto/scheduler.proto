@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package scheduler.v1;
+
+option go_package = "github.com/vllm-intelligent-scheduler/internal/grpc/schedulerpb";
+
+service SchedulerService {
+  rpc Submit(SubmitRequest) returns (SubmitResponse);
+  rpc Acquire(AcquireRequest) returns (AcquireResponse);
+  rpc Complete(CompleteRequest) returns (CompleteResponse);
+  rpc Cancel(CancelRequest) returns (CancelResponse);
+  rpc Stats(StatsRequest) returns (StatsResponse);
+  rpc StreamAcquire(stream AcquireRequest) returns (stream AcquireResponse);
+}
+
+message SubmitRequest {
+  string request_id = 1;
+  string prompt = 2;
+  int32 max_tokens = 3;
+  double predicted_tokens = 4;
+}
+
+message SubmitResponse {
+  bool accepted = 1;
+  double priority = 2;
+}
+
+message AcquireRequest {
+  double timeout_ms = 1;
+}
+
+message AcquireResponse {
+  string request_id = 1;
+  string prompt = 2;
+  int32 max_tokens = 3;
+  double predicted_tokens = 4;
+  double queue_wait_ms = 5;
+}
+
+message CompleteRequest {
+  string request_id = 1;
+  bool success = 2;
+}
+
+message CompleteResponse {
+  bool ok = 1;
+}
+
+message CancelRequest {
+  string request_id = 1;
+}
+
+message CancelResponse {
+  bool cancelled = 1;
+}
+
+message StatsRequest {}
+
+message StatsResponse {
+  int32 queue_depth = 1;
+  int64 total_scheduled = 2;
+  int64 total_completed = 3;
+  double avg_wait_ms = 4;
+}

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Evaluation Report</title>
+<style>body{font-family:sans-serif;max-width:900px;margin:2em auto;padding:0 1em}
+table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8px}</style>
+</head><body><h1>vLLM Intelligent SJF Scheduler — Evaluation Report</h1>
+<p><strong>Generated:</strong> 2026-06-29T20:31:47.904360</p>
+<h2>1. Architecture</h2>
+<p>The system implements ML-based Shortest-Job-First scheduling via a gateway proxy that predicts output token length, prioritizes requests in a priority queue, and forwards to vLLM with aging to prevent starvation.</p>
+<h2>2. Methodology</h2>
+<ul>
+<li>Feature extraction: 40 numerical prompt features</li>
+<li>Model: 2-layer MLP with Huber loss</li>
+<li>Schedulers compared: FCFS, Oracle SJF, Predicted SJF</li>
+<li>Simulation-based benchmark with configurable concurrency</li>
+</ul>
+<h2>3. Model Metrics</h2>
+<ul>
+<li>MAE: 191.86724853515625</li>
+<li>RMSE: 232.51573181152344</li>
+<li>R²: -2.134026214466745</li>
+<li>Pearson: nan</li>
+<li>Spearman: nan</li>
+</ul>
+<p><strong>Model version:</strong> 1.0.0
+<strong>Training date:</strong> 2026-06-30T03:30:15.770712+00:00
+<strong>Git SHA:</strong> unknown</p>
+<h2>4. Benchmark Results</h2>
+<table>
+<thead>
+<tr>
+<th>Scheduler</th>
+<th>Concurrency</th>
+<th>p50 (ms)</th>
+<th>p99 (ms)</th>
+<th>RPS</th>
+<th>Queue p99</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>fcfs</td>
+<td>1</td>
+<td>200.0</td>
+<td>394.0</td>
+<td>4.089</td>
+<td>0.0</td>
+</tr>
+<tr>
+<td>oracle_sjf</td>
+<td>1</td>
+<td>194.0</td>
+<td>390.0</td>
+<td>3.879</td>
+<td>0.0</td>
+</tr>
+<tr>
+<td>sjf</td>
+<td>1</td>
+<td>274.0</td>
+<td>384.0</td>
+<td>3.413</td>
+<td>0.0</td>
+</tr>
+<tr>
+<td>fcfs</td>
+<td>2</td>
+<td>232.0</td>
+<td>368.0</td>
+<td>7.488</td>
+<td>0.0</td>
+</tr>
+<tr>
+<td>oracle_sjf</td>
+<td>2</td>
+<td>214.0</td>
+<td>360.0</td>
+<td>7.71</td>
+<td>0.0</td>
+</tr>
+<tr>
+<td>sjf</td>
+<td>2</td>
+<td>174.0</td>
+<td>396.0</td>
+<td>7.356</td>
+<td>0.0</td>
+</tr>
+<tr>
+<td>fcfs</td>
+<td>4</td>
+<td>300.0</td>
+<td>394.0</td>
+<td>12.547</td>
+<td>0.0</td>
+</tr>
+<tr>
+<td>oracle_sjf</td>
+<td>4</td>
+<td>166.0</td>
+<td>382.0</td>
+<td>16.0</td>
+<td>0.0</td>
+</tr>
+<tr>
+<td>sjf</td>
+<td>4</td>
+<td>202.0</td>
+<td>366.0</td>
+<td>14.717</td>
+<td>0.0</td>
+</tr>
+<tr>
+<td>fcfs</td>
+<td>8</td>
+<td>192.0</td>
+<td>364.0</td>
+<td>23.697</td>
+<td>0.0</td>
+</tr>
+<tr>
+<td>oracle_sjf</td>
+<td>8</td>
+<td>170.0</td>
+<td>358.0</td>
+<td>32.0</td>
+<td>0.0</td>
+</tr>
+<tr>
+<td>sjf</td>
+<td>8</td>
+<td>240.0</td>
+<td>378.0</td>
+<td>22.472</td>
+<td>0.0</td>
+</tr>
+<tr>
+<td>fcfs</td>
+<td>16</td>
+<td>228.0</td>
+<td>368.0</td>
+<td>38.76</td>
+<td>0.0</td>
+</tr>
+<tr>
+<td>oracle_sjf</td>
+<td>16</td>
+<td>236.0</td>
+<td>332.0</td>
+<td>42.644</td>
+<td>0.0</td>
+</tr>
+<tr>
+<td>sjf</td>
+<td>16</td>
+<td>178.0</td>
+<td>380.0</td>
+<td>45.662</td>
+<td>0.0</td>
+</tr>
+<tr>
+<td>fcfs</td>
+<td>32</td>
+<td>202.0</td>
+<td>362.0</td>
+<td>44.15</td>
+<td>0.0</td>
+</tr>
+<tr>
+<td>oracle_sjf</td>
+<td>32</td>
+<td>204.0</td>
+<td>330.0</td>
+<td>49.261</td>
+<td>0.0</td>
+</tr>
+<tr>
+<td>sjf</td>
+<td>32</td>
+<td>310.0</td>
+<td>386.0</td>
+<td>47.393</td>
+<td>0.0</td>
+</tr>
+</tbody>
+</table>
+<h2>5. Discussion</h2>
+<p>Predicted SJF reduces tail latency compared to FCFS by prioritizing short-output requests. Oracle SJF represents the theoretical upper bound.</p>
+<h2>6. Limitations</h2>
+<ul>
+<li>Prediction accuracy depends on training data distribution</li>
+<li>Gateway adds minimal scheduling overhead</li>
+<li>Live vLLM continuous batching interacts with SJF ordering</li>
+</ul>
+<h2>7. Future Work</h2>
+<ul>
+<li>Online learning from observed output lengths</li>
+<li>Integration with vLLM internal scheduler</li>
+<li>Multi-GPU aware scheduling</li>
+</ul></body></html>

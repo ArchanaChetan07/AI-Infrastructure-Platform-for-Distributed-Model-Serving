@@ -1,0 +1,16 @@
+[run]
+source = python/predictor, python/scheduler, vllm_port
+omit =
+    vllm_port/registry_patch.py
+    vllm_port/smollm3.py
+    */audit_scripts/*
+    */tests/*
+
+[report]
+precision = 2
+show_missing = True
+skip_covered = False
+fail_under = 95
+
+[html]
+directory = coverage_html

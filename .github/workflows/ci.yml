@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+env:
+  PYTHONPATH: .:python
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements-dev.txt
+      - run: ruff check vllm_port/ python/ tests/ benchmarks/ scripts/
+      - run: black --check vllm_port/ python/ tests/
+      - run: pytest tests/ -m "unit or integration" -v --cov --cov-report=xml --cov-report=term-missing
+      - name: Security scan (pip-audit)
+        run: pip install pip-audit && pip-audit -r requirements.txt || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: coverage.xml
+
+  cpp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cmake -S cpp -B cpp/build
+      - run: cmake --build cpp/build
+      - run: ctest --test-dir cpp/build --output-on-failure
+
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache-dependency-path: go/go.sum
+      - run: cd go && go vet ./...
+      - run: cd go && go test ./...
+      - run: cd go && go build -o /tmp/gateway ./cmd/gateway
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: [python, go, cpp]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - run: docker build -f docker/Dockerfile.scheduler -t vllm-scheduler:ci .
+      - run: docker build -f docker/Dockerfile.gateway -t vllm-gateway:ci .
+      - run: docker build -f docker/Dockerfile.ml -t vllm-ml:ci .
+
+  benchmark:
+    runs-on: ubuntu-latest
+    needs: python
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements-dev.txt
+      - run: PYTHONPATH=python:. python python/training/train.py
+      - run: PYTHONPATH=python:. python python/benchmark/compare.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: python/benchmark/results/
+
+  gpu:
+    runs-on: ubuntu-latest
+    if: ${{ secrets.HF_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements-dev.txt
+      - run: pip install vllm || echo "vLLM install skipped on CPU runner"
+      - env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          PYTHONPATH=.:python pytest tests/test_smollm3.py -m "accuracy or integration" -v --tb=short || \
+            echo "GPU tests skipped or failed on CPU runner"

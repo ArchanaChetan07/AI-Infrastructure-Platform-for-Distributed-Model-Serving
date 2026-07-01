@@ -1,0 +1,58 @@
+
+services:
+  vllm:
+    image: vllm-smollm3:latest
+    container_name: vllm-backend
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    environment:
+      - VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=0
+    ports:
+      - "8002:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 180s
+    restart: unless-stopped
+
+  scheduler:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.scheduler
+    container_name: vllm-sjf-scheduler
+    depends_on:
+      vllm:
+        condition: service_healthy
+    environment:
+      - VLLM_URL=http://vllm:8000
+    volumes:
+      - ../shared/models:/app/shared/models:ro
+      - ../configs:/app/configs:ro
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v2.50.0
+    container_name: scheduler-prometheus
+    volumes:
+      - ../monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9091:9090"
+    restart: unless-stopped
+
+volumes:
+  hf-cache:

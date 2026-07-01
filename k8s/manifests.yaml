@@ -1,0 +1,110 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vllm-smollm3
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: smollm3-config
+  namespace: vllm-smollm3
+data:
+  VLLM_MODEL: "HuggingFaceTB/SmolLM3-3B"
+  VLLM_DTYPE: "float16"
+  VLLM_MAX_MODEL_LEN: "2048"
+  VLLM_GPU_MEM_UTIL: "0.85"
+  VLLM_ATTENTION_BACKEND: "XFORMERS"
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: hf-cache
+  namespace: vllm-smollm3
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 15Gi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-smollm3
+  namespace: vllm-smollm3
+  labels:
+    app: vllm-smollm3
+    project: 2a-model-port
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vllm-smollm3
+  template:
+    metadata:
+      labels:
+        app: vllm-smollm3
+    spec:
+      tolerations:
+        - key: "nvidia.com/gpu"
+          operator: "Exists"
+          effect: "NoSchedule"
+      containers:
+        - name: vllm-smollm3
+          image: ghcr.io/your-username/vllm-smollm3:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          env:
+            - name: HF_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hf-token
+                  key: HF_TOKEN
+          envFrom:
+            - configMapRef:
+                name: smollm3-config
+          resources:
+            requests:
+              cpu: "4"
+              memory: "16Gi"
+              nvidia.com/gpu: "1"
+            limits:
+              nvidia.com/gpu: "1"
+          volumeMounts:
+            - name: hf-cache
+              mountPath: /root/.cache/huggingface
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 120
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 120
+            periodSeconds: 15
+            failureThreshold: 10
+      volumes:
+        - name: hf-cache
+          persistentVolumeClaim:
+            claimName: hf-cache
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vllm-smollm3
+  namespace: vllm-smollm3
+spec:
+  selector:
+    app: vllm-smollm3
+  ports:
+    - port: 8000
+      targetPort: 8000
+  type: LoadBalancer

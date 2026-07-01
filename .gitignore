@@ -1,0 +1,84 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.venv/
+.venv_*/
+venv/
+ENV/
+
+# Testing & coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+
+# C++ / CMake
+cpp/build/
+cmake-build-*/
+*.o
+*.obj
+*.exe
+*.dll
+*.dylib
+*.a
+*.lib
+
+# IDE & OS
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Caches & logs
+.cache/
+*.log
+.ruff_cache/
+.mypy_cache/
+
+# ML artifacts (large; regenerate via training)
+shared/models/*.onnx
+shared/models/*.pt
+shared/models/*.torchscript
+models/
+wandb/
+
+# Secrets & local env
+.env
+.env.*
+*.pem
+credentials.json
+
+# Docker local overrides
+docker-compose.override.yml
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Audit / local venv (not for commit)
+.venv_audit/

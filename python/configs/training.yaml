@@ -1,0 +1,32 @@
+# Training configuration
+dataset:
+  preset: synthetic  # synthetic | alpaca | dolly
+  max_samples: 8000
+  train_ratio: 0.8
+  val_ratio: 0.1
+  seed: 42
+
+model:
+  hidden_dim: 128
+  dropout: 0.1
+
+training:
+  lr: 0.001
+  weight_decay: 0.0001
+  batch_size: 256
+  epochs: 50
+  patience: 8
+  grad_clip: 1.0
+  use_amp: true
+  use_compile: false
+  seed: 42
+  device: auto
+
+export:
+  output_dir: models
+  model_version: "1.0.0"
+
+benchmark:
+  concurrency_levels: [1, 2, 4, 8, 16, 32]
+  requests_per_level: 20
+  max_tokens: 100

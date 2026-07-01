@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-intelligent-scheduler
+  namespace: vllm-scheduler
+  labels:
+    app: sjf-scheduler
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: sjf-scheduler
+  template:
+    metadata:
+      labels:
+        app: sjf-scheduler
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: scheduler
+          image: vllm-sjf-scheduler:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PYTHONPATH
+              value: /app
+          volumeMounts:
+            - name: config
+              mountPath: /app/configs
+            - name: models
+              mountPath: /app/models
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "2"
+              memory: "2Gi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: config
+          configMap:
+            name: sjf-scheduler-config
+        - name: models
+          persistentVolumeClaim:
+            claimName: sjf-models-pvc
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-backend
+  namespace: vllm-scheduler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vllm-backend
+  template:
+    metadata:
+      labels:
+        app: vllm-backend
+    spec:
+      containers:
+        - name: vllm
+          image: vllm-smollm3:latest
+          ports:
+            - containerPort: 8000
+          resources:
+            limits:
+              nvidia.com/gpu: 1
+          env:
+            - name: VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS
+              value: "0"

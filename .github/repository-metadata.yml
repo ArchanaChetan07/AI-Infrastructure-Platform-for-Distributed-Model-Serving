@@ -1,0 +1,13 @@
+name: AI Infrastructure Platform for Distributed Model Serving
+description: ML-based SJF scheduling, vLLM integration, and production serving infrastructure
+topics:
+  - machine-learning
+  - vllm
+  - llm-inference
+  - kubernetes
+  - distributed-systems
+  - scheduling
+  - gpu
+  - fastapi
+  - prometheus
+  - onnx

@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: sjf-scheduler-service
+  namespace: vllm-scheduler
+spec:
+  selector:
+    app: sjf-scheduler
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vllm-service
+  namespace: vllm-scheduler
+spec:
+  selector:
+    app: vllm-backend
+  ports:
+    - port: 8000
+      targetPort: 8000
+      name: http

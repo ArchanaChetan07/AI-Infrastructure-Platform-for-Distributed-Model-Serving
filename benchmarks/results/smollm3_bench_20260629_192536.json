@@ -1,0 +1,14 @@
+[
+  {
+    "concurrency": 1,
+    "n_requests": 5,
+    "n_success": 5,
+    "total_tokens": 500,
+    "elapsed_sec": 37.27,
+    "throughput_rps": 0.13,
+    "tokens_per_sec": 13.4,
+    "e2e_p50_ms": 6062.0,
+    "e2e_p99_ms": 6079.0,
+    "error_rate": 0.0
+  }
+]

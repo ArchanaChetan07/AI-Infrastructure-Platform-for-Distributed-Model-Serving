@@ -1,0 +1,22 @@
+server:
+  host: 0.0.0.0
+  port: 8080
+  read_timeout_sec: 300
+  write_timeout_sec: 300
+
+vllm:
+  base_url: http://localhost:8002
+  model: HuggingFaceTB/SmolLM3-3B
+
+runtime:
+  scheduler_type: sjf
+  max_workers: 32
+  model_path: shared/models/output_length.onnx
+
+auth:
+  enabled: false
+  jwt_secret: ""
+
+metrics:
+  enabled: true
+  port: 9091
