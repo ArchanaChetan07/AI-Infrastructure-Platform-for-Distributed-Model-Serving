@@ -75,16 +75,20 @@ jobs:
 
   gpu:
     runs-on: ubuntu-latest
-    if: ${{ secrets.HF_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - run: pip install -r requirements-dev.txt
-      - run: pip install vllm || echo "vLLM install skipped on CPU runner"
-      - env:
+      - name: GPU integration tests (optional)
+        env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
+          if [ -z "$HF_TOKEN" ]; then
+            echo "::notice::HF_TOKEN not configured — skipping GPU tests"
+            exit 0
+          fi
+          pip install vllm || echo "vLLM install skipped on CPU runner"
           PYTHONPATH=.:python pytest tests/test_smollm3.py -m "accuracy or integration" -v --tb=short || \
             echo "GPU tests skipped or failed on CPU runner"

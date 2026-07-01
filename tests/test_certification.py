@@ -203,6 +203,7 @@ def test_predictor_batch_and_empty_metadata(tmp_path):
 @pytest.mark.unit
 def test_trainer_resume(tmp_path):
     from pathlib import Path
+
     builder = OutputLengthDataset()
     samples = builder.generate_synthetic(40)
     splits = builder.split(samples)

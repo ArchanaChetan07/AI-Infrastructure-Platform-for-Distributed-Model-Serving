@@ -50,6 +50,7 @@ try:
     from vllm.model_executor.model_loader.weight_utils import default_weight_loader
     from vllm.model_executor.sampling_metadata import SamplingMetadata
     from vllm.sequence import IntermediateTensors
+
     _VLLM_AVAILABLE = True
 except ImportError:
     _VLLM_AVAILABLE = False
@@ -62,6 +63,7 @@ except ImportError:
 # Config helper — works with real vLLM config or a plain dict/namespace
 # ---------------------------------------------------------------------------
 
+
 def _cfg(config, key: str, default=None):
     """Safely read from either a real HF config object or a dict."""
     if isinstance(config, dict):
@@ -72,6 +74,7 @@ def _cfg(config, key: str, default=None):
 # ---------------------------------------------------------------------------
 # SmolLM3 MLP (identical to Llama/Qwen2 SwiGLU)
 # ---------------------------------------------------------------------------
+
 
 class SmolLM3MLP(nn.Module):
     """
@@ -127,6 +130,7 @@ class SmolLM3MLP(nn.Module):
 # SmolLM3 Attention — the KEY delta: NoPE vs RoPE per layer
 # ---------------------------------------------------------------------------
 
+
 class SmolLM3Attention(nn.Module):
     """
     Multi-head grouped-query attention with optional RoPE.
@@ -153,9 +157,8 @@ class SmolLM3Attention(nn.Module):
         self.hidden_size = _cfg(config, "hidden_size", 2048)
         self.num_heads = _cfg(config, "num_attention_heads", 32)
         self.num_kv_heads = _cfg(config, "num_key_value_heads", 8)
-        self.head_dim = _cfg(config, "head_dim",
-                             self.hidden_size // self.num_heads)
-        self.scaling = self.head_dim ** -0.5
+        self.head_dim = _cfg(config, "head_dim", self.hidden_size // self.num_heads)
+        self.scaling = self.head_dim**-0.5
 
         # [CRITICAL PATCH] Determine if this layer uses RoPE or NoPE
         nope_interval = _cfg(config, "nope_layer_interval", 2)
@@ -256,9 +259,7 @@ class SmolLM3Attention(nn.Module):
             repeat = self.num_heads // self.num_kv_heads
             k = k.repeat_interleave(repeat, dim=1)
             v = v.repeat_interleave(repeat, dim=1)
-            attn = torch.softmax(
-                (q @ k.transpose(-2, -1)) * self.scaling, dim=-1
-            )
+            attn = torch.softmax((q @ k.transpose(-2, -1)) * self.scaling, dim=-1)
             out = (attn @ v).transpose(1, 2).reshape(b, s, -1)
             return self.o_proj(out)
 
@@ -266,6 +267,7 @@ class SmolLM3Attention(nn.Module):
 # ---------------------------------------------------------------------------
 # SmolLM3 Decoder Layer
 # ---------------------------------------------------------------------------
+
 
 class SmolLM3DecoderLayer(nn.Module):
     """
@@ -304,10 +306,12 @@ class SmolLM3DecoderLayer(nn.Module):
             self.input_layernorm = RMSNorm(hidden_size, eps=rms_norm_eps)
             self.post_attention_layernorm = RMSNorm(hidden_size, eps=rms_norm_eps)
         else:
-            self.input_layernorm = nn.LayerNorm(hidden_size, eps=rms_norm_eps,
-                                                elementwise_affine=True)
-            self.post_attention_layernorm = nn.LayerNorm(hidden_size, eps=rms_norm_eps,
-                                                         elementwise_affine=True)
+            self.input_layernorm = nn.LayerNorm(
+                hidden_size, eps=rms_norm_eps, elementwise_affine=True
+            )
+            self.post_attention_layernorm = nn.LayerNorm(
+                hidden_size, eps=rms_norm_eps, elementwise_affine=True
+            )
 
     def forward(
         self,
@@ -344,9 +348,7 @@ class SmolLM3DecoderLayer(nn.Module):
 
         # Post-attention norm + MLP
         if _VLLM_AVAILABLE:
-            hidden_states, residual = self.post_attention_layernorm(
-                hidden_states, residual
-            )
+            hidden_states, residual = self.post_attention_layernorm(hidden_states, residual)
         else:
             hidden_states = hidden_states + residual
             residual = hidden_states
@@ -360,6 +362,7 @@ class SmolLM3DecoderLayer(nn.Module):
 # ---------------------------------------------------------------------------
 # SmolLM3 Base Model
 # ---------------------------------------------------------------------------
+
 
 class SmolLM3Model(nn.Module):
     """
@@ -397,22 +400,23 @@ class SmolLM3Model(nn.Module):
         else:
             self.embed_tokens = nn.Embedding(vocab_size, hidden_size)
 
-        self.layers = nn.ModuleList([
-            SmolLM3DecoderLayer(
-                config=config,
-                layer_idx=i,
-                cache_config=cache_config,
-                quant_config=quant_config,
-                prefix=f"{prefix}.layers.{i}",
-            )
-            for i in range(num_layers)
-        ])
+        self.layers = nn.ModuleList(
+            [
+                SmolLM3DecoderLayer(
+                    config=config,
+                    layer_idx=i,
+                    cache_config=cache_config,
+                    quant_config=quant_config,
+                    prefix=f"{prefix}.layers.{i}",
+                )
+                for i in range(num_layers)
+            ]
+        )
 
         if _VLLM_AVAILABLE:
             self.norm = RMSNorm(hidden_size, eps=rms_norm_eps)
         else:
-            self.norm = nn.LayerNorm(hidden_size, eps=rms_norm_eps,
-                                     elementwise_affine=True)
+            self.norm = nn.LayerNorm(hidden_size, eps=rms_norm_eps, elementwise_affine=True)
 
     def forward(
         self,
@@ -450,6 +454,7 @@ class SmolLM3Model(nn.Module):
 # ---------------------------------------------------------------------------
 # SmolLM3ForCausalLM — top-level model registered in vLLM
 # ---------------------------------------------------------------------------
+
 
 class SmolLM3ForCausalLM(nn.Module):
     """
@@ -505,7 +510,8 @@ class SmolLM3ForCausalLM(nn.Module):
         # matches embed_tokens; weight sharing is set in load_weights.
         if _VLLM_AVAILABLE:
             self.lm_head = ParallelLMHead(
-                vocab_size, hidden_size,
+                vocab_size,
+                hidden_size,
                 org_num_embeddings=vocab_size,
                 prefix=f"{prefix}.lm_head",
             )
@@ -539,9 +545,7 @@ class SmolLM3ForCausalLM(nn.Module):
         sampling_metadata,
     ) -> Optional[torch.Tensor]:
         if _VLLM_AVAILABLE:
-            logits = self.logits_processor(
-                self.lm_head, hidden_states, sampling_metadata
-            )
+            logits = self.logits_processor(self.lm_head, hidden_states, sampling_metadata)
             return logits
         return self.lm_head(hidden_states)
 
@@ -574,7 +578,7 @@ class SmolLM3ForCausalLM(nn.Module):
             ("k_proj", "qkv_proj", "k"),
             ("v_proj", "qkv_proj", "v"),
             ("gate_proj", "gate_up_proj", 0),
-            ("up_proj",   "gate_up_proj", 1),
+            ("up_proj", "gate_up_proj", 1),
         ]
 
         params_dict = dict(self.named_parameters())
@@ -594,9 +598,7 @@ class SmolLM3ForCausalLM(nn.Module):
                         break
                     param = params_dict[vllm_key]
                     if _VLLM_AVAILABLE:
-                        weight_loader = getattr(
-                            param, "weight_loader", default_weight_loader
-                        )
+                        weight_loader = getattr(param, "weight_loader", default_weight_loader)
                         weight_loader(param, loaded_weight, shard_id)
                     is_stacked = True
                     break
@@ -608,9 +610,7 @@ class SmolLM3ForCausalLM(nn.Module):
             if name in params_dict:
                 param = params_dict[name]
                 if _VLLM_AVAILABLE:
-                    weight_loader = getattr(
-                        param, "weight_loader", default_weight_loader
-                    )
+                    weight_loader = getattr(param, "weight_loader", default_weight_loader)
                     weight_loader(param, loaded_weight)
                 else:
                     param.data.copy_(loaded_weight)
