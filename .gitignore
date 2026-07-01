@@ -61,11 +61,10 @@ Thumbs.db
 .ruff_cache/
 .mypy_cache/
 
-# ML artifacts (large; regenerate via training)
-shared/models/*.onnx
-shared/models/*.pt
-shared/models/*.torchscript
-models/
+# ML artifacts — ignore large training outputs only
+shared/models/checkpoints/
+shared/models/logs/
+/models/
 wandb/
 
 # Secrets & local env
