@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-
 from predictor.dataset import OutputLengthDataset
 from predictor.trainer import TrainConfig, Trainer, _regression_metrics
 

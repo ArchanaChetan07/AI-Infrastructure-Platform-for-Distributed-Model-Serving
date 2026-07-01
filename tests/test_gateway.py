@@ -6,9 +6,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import httpx
 import pytest
-from starlette.testclient import TestClient
-
 from scheduler.gateway import SchedulerGateway, create_app, load_config
+from starlette.testclient import TestClient
 
 
 def _mock_vllm_response() -> MagicMock:

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from predictor.model import OutputLengthMLP
 from predictor.predictor import OutputLengthPredictor
 from scheduler.aging import AgingConfig, AgingPolicy, create_aging

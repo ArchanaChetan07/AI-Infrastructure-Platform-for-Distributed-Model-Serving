@@ -5,23 +5,20 @@ from __future__ import annotations
 import asyncio
 import json
 from contextlib import asynccontextmanager
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import httpx
-import numpy as np
 import pytest
 import torch
-from starlette.testclient import TestClient
-
 from predictor.dataset import OutputLengthDataset, parallel_extract
 from predictor.model import OutputLengthMLP
 from predictor.predictor import OutputLengthPredictor
 from predictor.trainer import TrainConfig, Trainer
-from scheduler.base_scheduler import ScheduledRequest
+from scheduler.base_scheduler import ScheduledRequest, SchedulerType
 from scheduler.gateway import SchedulerGateway, create_app, load_config
 from scheduler.priority_queue import PriorityQueue, new_request_id
 from scheduler.sjf_scheduler import OracleSJFScheduler, SJFScheduler, build_scheduler
-from scheduler.base_scheduler import SchedulerType
+from starlette.testclient import TestClient
 
 
 @pytest.mark.unit
@@ -140,8 +137,6 @@ async def test_sjf_oracle_scheduler():
 @pytest.mark.asyncio
 @pytest.mark.unit
 async def test_sjf_fallback_queue(gateway_config):
-    predictor = OutputLengthPredictor(OutputLengthMLP())
-
     class FailPred:
         def predict(self, prompt):
             raise RuntimeError("fail")

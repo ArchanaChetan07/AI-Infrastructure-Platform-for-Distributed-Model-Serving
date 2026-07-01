@@ -14,17 +14,17 @@ Usage:
 """
 
 from __future__ import annotations
+
 import argparse
 import asyncio
 import json
 import time
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import List
 
 import httpx
-
 
 PROMPTS = [
     "Explain what a transformer neural network is.",
@@ -117,7 +117,7 @@ async def run_level(
 
 def render_table(results: List[BenchResult]) -> str:
     lines = [
-        "| Concurrency | Requests | Success | RPS | Tokens/sec | E2E p50 (ms) | E2E p99 (ms) | Errors |",
+        "| Concurrency | Requests | Success | RPS | Tok/s | E2E p50 | E2E p99 | Err |",
         "|-------------|----------|---------|-----|------------|--------------|--------------|--------|",
     ]
     for r in results:

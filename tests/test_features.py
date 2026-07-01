@@ -5,7 +5,6 @@ from __future__ import annotations
 import time
 
 import pytest
-
 from predictor.feature_extractor import FeatureExtractor, extract_from_messages
 from predictor.features import FEATURE_NAMES, NUM_FEATURES
 

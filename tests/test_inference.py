@@ -7,12 +7,16 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
-
+from predictor.dataset import OutputLengthDataset
 from predictor.export import export_model
 from predictor.features import FeatureVector
-from predictor.inference import ONNXPredictor, TorchScriptPredictor, _load_norm_arrays, load_predictor
+from predictor.inference import (
+    ONNXPredictor,
+    TorchScriptPredictor,
+    _load_norm_arrays,
+    load_predictor,
+)
 from predictor.trainer import TrainConfig, Trainer
-from predictor.dataset import OutputLengthDataset
 
 
 @pytest.fixture
@@ -51,7 +55,10 @@ def mock_onnx_session():
 @pytest.mark.unit
 def test_onnx_predictor(exported_models, mock_ort, mock_onnx_session):
     with patch.dict(sys.modules, {"onnxruntime": mock_ort}):
-        pred = ONNXPredictor(exported_models / "output_length.onnx", exported_models / "metadata.json")
+        pred = ONNXPredictor(
+            exported_models / "output_length.onnx",
+            exported_models / "metadata.json",
+        )
         value, ms = pred.predict(FeatureVector.zeros())
         assert value == 42.0
         assert ms >= 0

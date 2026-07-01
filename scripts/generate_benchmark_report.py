@@ -13,9 +13,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "python"))
 
-import asyncio
+import asyncio  # noqa: E402
 
-from benchmark.compare import main as compare_main
+from benchmark.compare import main as compare_main  # noqa: E402
 
 
 def run(concurrency: int, n_requests: int, output_dir: Path) -> dict:

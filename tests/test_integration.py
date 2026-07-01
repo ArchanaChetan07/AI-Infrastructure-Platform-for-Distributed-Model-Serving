@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from benchmark.fcfs import run_fcfs_benchmark
 from benchmark.sjf import run_oracle_benchmark, run_sjf_benchmark
 from predictor.dataset import OutputLengthDataset

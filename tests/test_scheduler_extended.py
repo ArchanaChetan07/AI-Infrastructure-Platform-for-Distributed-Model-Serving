@@ -7,15 +7,14 @@ from unittest.mock import AsyncMock, MagicMock
 
 import httpx
 import pytest
-from starlette.testclient import TestClient
-
 from predictor.model import OutputLengthMLP
 from predictor.predictor import OutputLengthPredictor
+from scheduler.aging import AgingConfig
 from scheduler.base_scheduler import ScheduledRequest, SchedulerType
 from scheduler.gateway import SchedulerGateway, create_app, load_config
 from scheduler.priority_queue import PriorityQueue, new_request_id
 from scheduler.sjf_scheduler import SJFScheduler, build_scheduler
-from scheduler.aging import AgingConfig
+from starlette.testclient import TestClient
 
 
 @pytest.mark.asyncio
@@ -41,8 +40,6 @@ async def test_priority_queue_update_priority():
 @pytest.mark.asyncio
 @pytest.mark.unit
 async def test_sjf_prediction_failure_fallback():
-    predictor = OutputLengthPredictor(OutputLengthMLP())
-
     class BadPredictor:
         def predict(self, prompt):
             raise RuntimeError("boom")
@@ -77,7 +74,8 @@ async def test_sjf_on_reload():
 def test_build_scheduler_types():
     pred = OutputLengthPredictor(OutputLengthMLP())
     assert build_scheduler(SchedulerType.FCFS, pred).__class__.__name__ == "FCFSScheduler"
-    assert build_scheduler(SchedulerType.ORACLE_SJF, pred).__class__.__name__ == "OracleSJFScheduler"
+    oracle = build_scheduler(SchedulerType.ORACLE_SJF, pred)
+    assert oracle.__class__.__name__ == "OracleSJFScheduler"
     with pytest.raises(ValueError):
         build_scheduler(SchedulerType.SJF, None)
 

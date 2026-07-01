@@ -1,8 +1,7 @@
 """Feature vector edge-case tests."""
 
 import pytest
-
-from predictor.features import FeatureVector, FEATURE_NAMES, NUM_FEATURES
+from predictor.features import FEATURE_NAMES, NUM_FEATURES, FeatureVector
 
 
 @pytest.mark.unit

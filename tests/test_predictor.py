@@ -5,7 +5,6 @@ from __future__ import annotations
 import numpy as np
 import pytest
 import torch
-
 from predictor.dataset import OutputLengthDataset
 from predictor.model import ModelConfig, OutputLengthMLP, huber_loss
 from predictor.predictor import OutputLengthPredictor
