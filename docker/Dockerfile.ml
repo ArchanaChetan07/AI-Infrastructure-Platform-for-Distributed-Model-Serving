@@ -1,7 +1,8 @@
 FROM python:3.12-slim AS python-ml
 WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements-serving.txt requirements.txt ./
+RUN pip install --no-cache-dir -r requirements-serving.txt && \
+    pip install --no-cache-dir datasets matplotlib markdown
 COPY python/ python/
 COPY shared/models shared/models/
 ENV PYTHONPATH=/app/python

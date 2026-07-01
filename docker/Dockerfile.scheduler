@@ -5,8 +5,8 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements-serving.txt .
+RUN pip install --no-cache-dir -r requirements-serving.txt
 
 # Source lives under python/ in this repo — keep that layout inside the image
 # so module paths (e.g. `scheduler.gateway`) resolve via PYTHONPATH=/app/python.
