@@ -1,95 +1,111 @@
-# AI-Infrastructure-Platform-for-Distributed-Model-Serving
+# AI Infrastructure Platform for Distributed Model Serving
 
-Python · FastAPI · Kubernetes · Docker · Helm · Prometheus · Grafana · GPU · vLLM · MLOps · CI/CD. schedule overhead <0.5ms (<1% E2E); feature <1ms; 139 files. Production LLM/platform engineering focus for latency, cost, and reliability.
+### Predicted Shortest-Job-First scheduler gateway in front of vLLM with ONNX output-length prediction
 
-## Results (numbers)
+[![CI](https://github.com/ArchanaChetan07/AI-Infrastructure-Platform-for-Distributed-Model-Serving/actions/workflows/ci.yml/badge.svg)](https://github.com/ArchanaChetan07/AI-Infrastructure-Platform-for-Distributed-Model-Serving/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Tests](https://img.shields.io/badge/pytest-96%20tests-1f8a4c)](tests/)
+[![FastAPI](https://img.shields.io/badge/gateway-FastAPI-009688.svg)](python/scheduler/gateway.py)
+[![License](https://img.shields.io/badge/license-see%20repo-2d3748)](#license)
 
-| Metric | Value |
+Multi-language ML serving platform: a **FastAPI gateway** schedules OpenAI-compatible requests with **predicted SJF + priority aging**, forwards to vLLM workers, and exposes Prometheus metrics. Includes ONNX/PyTorch output-length predictor, C++ scheduler runtime, Go control-plane stubs, Docker/K8s assets, and broad pytest coverage (GPU/vLLM tests skip without `HF_TOKEN`).
+
+---
+
+## Key Results
+
+| Metric | Value | Source |
+|---|---|---|
+| Tracked files | **139** | git tree |
+| Python modules | **51** | git tree |
+| pytest functions | **96** | `tests/` |
+| Scheduler policies | **FCFS, Oracle SJF, Predicted SJF** | `python/scheduler/sjf_scheduler.py` |
+| Scheduler overhead target | **< 0.5 ms** (unit benchmarks) | `docs/PRODUCTION_CERTIFICATION_REPORT.md` §8 |
+| Feature extraction target | **< 1 ms** on CPU | `docs/architecture.md` |
+| Languages | Python, C++, Go, Dockerfile | repo layout |
+| CI | GitHub Actions (Python, Go, C++, Docker) | `.github/workflows/` |
+
+---
+
+## Architecture
+
+```mermaid
+flowchart LR
+    C[Client OpenAI API] --> GW[FastAPI SchedulerGateway]
+    GW --> PQ[Priority queue + aging]
+    PQ --> PRED[ONNX/PyTorch length predictor]
+    PRED --> SJF[SJF dispatch]
+    SJF --> VLLM[vLLM workers]
+    VLLM --> GW
+    GW --> MET[Prometheus metrics]
+    CPP[C++ schedulerd] -. runtime .- PQ
+    GO[Go control plane] -. optional .- GW
+```
+
+**How it works:** each `/v1/chat/completions` request is enqueued with a predicted output length; SJF orders the queue with anti-starvation aging, proxies to vLLM with timeouts and streaming support, and records queue depth / e2e latency histograms for observability.
+
+---
+
+## Tech Stack
+
+| Layer | Choice |
 |---|---|
-| Tracked repository files | **139** |
-| Python modules | **51** |
-| Notebooks | **0** |
-| Markdown docs | **19** |
-| CI workflows present | **Yes** |
-| Automated tests present | **Yes** |
-| Project highlights | **schedule overhead <0.5ms (<1% E2E); feature <1ms; 139 files** |
+| Gateway | FastAPI (`python/scheduler/gateway.py`) |
+| Scheduling | Predicted SJF, FCFS, Oracle SJF, cancellation |
+| Predictor | PyTorch training + ONNX export (`python/predictor/`) |
+| Runtime | C++20 scheduler + Go API package |
+| Serving target | vLLM (SmolLM3 port in `vllm_port/`) |
+| Ops | Docker Compose, K8s manifests, Helm values |
+| Tests | pytest (~85–90% cov on core packages per docs) |
 
-## Tech stack
+---
 
-- **Primary language:** Python
-- **Languages (GitHub):** Python (220779 bytes), C++ (14617 bytes), Go (11417 bytes), Dockerfile (2326 bytes), Makefile (2188 bytes), PowerShell (1479 bytes)
-- **Focus area:** infra
-- **Tooling keywords:** Python, machine-learning, CI/CD, API, Docker, Kubernetes, FastAPI, Prometheus, testing, automation, MLOps, LLM
+## Features
 
-## Architecture (logical)
+- OpenAI-compatible proxy with `/health`, `/ready`, `/scheduler/stats`
+- Graceful FCFS fallback when prediction fails
+- Request timeout + client-disconnect cancellation
+- Benchmark harness under `python/benchmark/` and `benchmarks/`
+- Production certification docs with measured scheduler comparisons
+- GPU validation path documented in `docs/GPU_SETUP.md` (requires `HF_TOKEN`)
 
-\\	ext
-Inputs → Processing / models / agents → Evaluation & metrics → CI checks → Artifacts
-\
-## Engineering practices
+---
 
-1. Reproducible layout with clear module boundaries  
-2. Automated validation via CI and/or tests when present  
-3. Documentation that states measurable outcomes, not slogans  
-4. Skill surface aligned to common JD keywords: Python, machine learning, NLP/LLM, Kubernetes, Docker, observability, data pipelines  
+## Installation & Usage
 
-## Quick start
-
-\\ash
+```bash
 git clone https://github.com/ArchanaChetan07/AI-Infrastructure-Platform-for-Distributed-Model-Serving.git
 cd AI-Infrastructure-Platform-for-Distributed-Model-Serving
-# Install project requirements (see requirements.txt / pyproject.toml / environment files if present)
-# Run tests or main entrypoints documented in this repo
-\
-## Skills demonstrated
+pip install -r python/requirements.txt
+pytest tests/ -q
+```
 
-Python · machine-learning · CI/CD · API design · testing · automation · Docker · Kubernetes · FastAPI · Prometheus · data-science · LLM · MLOps · software-engineering · benchmarking · observability
+```bash
+# Start gateway (see configs/scheduler.yaml)
+uvicorn scheduler.gateway:app --host 0.0.0.0 --port 8080
 
-## License / notice
+# Scheduler benchmarks
+make benchmark-scheduler
+```
 
-See repository license file if present. Metrics above are derived from repository structure and previously published validation notes where available.
+---
 
+## Project Structure
 
-### Extended notes
+```text
+AI-Infrastructure-Platform-for-Distributed-Model-Serving/
+├── python/scheduler/       # gateway, SJF, priority queue, aging
+├── python/predictor/       # training + ONNX inference
+├── cpp/                    # scheduler runtime + tests
+├── go/internal/api/        # control-plane API
+├── vllm_port/              # SmolLM3 integration patches
+├── docker/                 # scheduler, gateway, ml images
+├── tests/                  # 96 pytest functions
+└── docs/                   # architecture, certification, GPU setup
+```
 
-This section expands documentation for completeness: reproducibility, keyword coverage for Python, machine-learning, CI/CD, API, Docker, Kubernetes, FastAPI, Prometheus, testing, automation, MLOps, LLM, data-science, software-engineering, benchmarking, and observability practices used across the portfolio.
+---
 
+## License
 
-### Extended notes
-
-This section expands documentation for completeness: reproducibility, keyword coverage for Python, machine-learning, CI/CD, API, Docker, Kubernetes, FastAPI, Prometheus, testing, automation, MLOps, LLM, data-science, software-engineering, benchmarking, and observability practices used across the portfolio.
-
-
-### Extended notes
-
-This section expands documentation for completeness: reproducibility, keyword coverage for Python, machine-learning, CI/CD, API, Docker, Kubernetes, FastAPI, Prometheus, testing, automation, MLOps, LLM, data-science, software-engineering, benchmarking, and observability practices used across the portfolio.
-
-
-### Extended notes
-
-This section expands documentation for completeness: reproducibility, keyword coverage for Python, machine-learning, CI/CD, API, Docker, Kubernetes, FastAPI, Prometheus, testing, automation, MLOps, LLM, data-science, software-engineering, benchmarking, and observability practices used across the portfolio.
-
-
-### Extended notes
-
-This section expands documentation for completeness: reproducibility, keyword coverage for Python, machine-learning, CI/CD, API, Docker, Kubernetes, FastAPI, Prometheus, testing, automation, MLOps, LLM, data-science, software-engineering, benchmarking, and observability practices used across the portfolio.
-
-
-### Extended notes
-
-This section expands documentation for completeness: reproducibility, keyword coverage for Python, machine-learning, CI/CD, API, Docker, Kubernetes, FastAPI, Prometheus, testing, automation, MLOps, LLM, data-science, software-engineering, benchmarking, and observability practices used across the portfolio.
-
-
-### Extended notes
-
-This section expands documentation for completeness: reproducibility, keyword coverage for Python, machine-learning, CI/CD, API, Docker, Kubernetes, FastAPI, Prometheus, testing, automation, MLOps, LLM, data-science, software-engineering, benchmarking, and observability practices used across the portfolio.
-
-
-### Extended notes
-
-This section expands documentation for completeness: reproducibility, keyword coverage for Python, machine-learning, CI/CD, API, Docker, Kubernetes, FastAPI, Prometheus, testing, automation, MLOps, LLM, data-science, software-engineering, benchmarking, and observability practices used across the portfolio.
-
-
-### Extended notes
-
-This section expands documentation for completeness: reproducibility, keyword coverage for Python, machine-learning, CI/CD, API, Docker, Kubernetes, FastAPI, Prometheus, testing, automation, MLOps, LLM, data-science, software-engineering, benchmarking, and observability practices used across the portfolio.
+See repository license file if present.
