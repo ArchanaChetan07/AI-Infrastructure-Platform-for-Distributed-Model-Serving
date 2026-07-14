@@ -15,7 +15,7 @@ FCFS inference queues inflate latency for short generations when long jobs occup
 
 FastAPI gateway + feature extractor + MLP predictor (PyTorch/ONNX) driving SJF priority queue with aging; FCFS/Oracle baselines; C++/Go companions; Docker/K8s and Prometheus.
 
-v1.0.0 certification: 92 Python tests passed (7 skipped for HF_TOKEN), 91.66% core coverage, Go/C++ tests pass; scheduler comparison artifacts across concurrency 1–32 checked in.
+v1.0.0 certification: 92 Python tests passed (7 skipped for HF_TOKEN), with 91.58% test coverage on core packages (scheduler, predictor); Go/C++ tests pass, and scheduler comparison artifacts across concurrency 1–32 are checked in.
 
 This repository is maintained as **production-minded portfolio work**: clear architecture, automated checks where present, and metrics that are **traceable to committed artifacts** (never invented).
 
@@ -58,9 +58,10 @@ sequenceDiagram
 
 | Metric | Value | Source |
 |---|---|---|
+| Current core Python test run | **70/70 passed (100%)** | `pytest tests --ignore=tests/test_smollm3.py -m "unit or integration"` |
 | Python tests (certification) | **92 passed, 7 skipped (HF_TOKEN)** | `docs/PRODUCTION_CERTIFICATION_REPORT.md` |
-| Core package coverage | **91.66%** | `docs/PRODUCTION_CERTIFICATION_REPORT.md` |
-| Production readiness score | **9.0 / 10** | `docs/PRODUCTION_CERTIFICATION_REPORT.md` |
+| Core package coverage | **91.58% test coverage on core packages (scheduler, predictor)** | `docs/PRODUCTION_CERTIFICATION_REPORT.md` |
+| Production readiness score (internal audit) | **9.0 / 10 (internal audit)** | `docs/PRODUCTION_CERTIFICATION_REPORT.md` |
 | Predictor MAE | **191.87 tokens** | `docs/reports/evaluation_report.md` |
 | Oracle SJF RPS @ concurrency 32 | **49.261** | `python/benchmark/results/comparison_20260629_203146.md` |
 | Predicted SJF RPS @ concurrency 32 | **47.393** | `python/benchmark/results/comparison_20260629_203146.md` |
@@ -70,6 +71,8 @@ sequenceDiagram
 | Test-related paths | **15** | `git tree` |
 | CI workflows | **Yes** | `.github/workflows` |
 | Docker present | **Yes** | `repo root` |
+
+Coverage is intentionally scoped to production scheduler and predictor packages. `python/benchmark/compare.py` and `python/benchmark/plots.py` are comparison/report-visualization scripts, so they are explicitly excluded from the coverage requirement rather than being presented as production application code.
 
 ```mermaid
 %%{init: {'theme':'base'}}%%

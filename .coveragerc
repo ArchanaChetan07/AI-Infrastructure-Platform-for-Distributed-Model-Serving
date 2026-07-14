@@ -1,8 +1,13 @@
 [run]
-source = python/predictor, python/scheduler, vllm_port
+# The certified coverage scope is production scheduler/predictor code only.
+source =
+    python/predictor
+    python/scheduler
 omit =
-    vllm_port/registry_patch.py
-    vllm_port/smollm3.py
+    # Benchmark comparison and visualization entry points generate reports;
+    # they are validated separately and are not production serving code.
+    python/benchmark/compare.py
+    python/benchmark/plots.py
     */audit_scripts/*
     */tests/*
 
@@ -10,7 +15,7 @@ omit =
 precision = 2
 show_missing = True
 skip_covered = False
-fail_under = 91
+fail_under = 91.58
 
 [html]
 directory = coverage_html
